@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import sys
 import os
 
@@ -15,6 +14,8 @@ try:
         for i in config:
             if i != 'compile_tool':
                 config[i] = config[i][0]
+        if not config['template_root'].endswith(dir_char):
+            config['template_root'] += dir_char
 except IOError:
     exit("No file named: project_configure.csv\n May you need run:\"Qpro -init\" first!")
 is_cpp = config['compile_filename'].endswith('cpp')
@@ -33,8 +34,8 @@ def match_algorithm():
     return content
 
 
-def write_algorithm(temp, algorithm, content):
-    with open(config['template_root'] + temp, 'w') as file:
+def write_algorithm(temp, algorithm, content, mode):
+    with open(config['template_root'] + temp, mode) as file:
         file.write('\n## %s\n\n```%s\n' % (algorithm, 'c++' if is_cpp else 'c'))
         file.write(content)
         file.write('\n```\n')
@@ -44,15 +45,23 @@ def create():
     global temp_name, algorithm_name
     indx = sys.argv.index('-c')
     try:
-        temp_name = sys.argv[indx + 1] + '.md'
+        temp_name = sys.argv[indx + 1]
         algorithm_name = sys.argv[indx + 2]
     except IndexError:
-        exit('usage: tmpm -c template algorithm')
+        if temp_name != 'main':
+            with open(config['compile_filename'], 'r') as file:
+                ct = file.read()
+            with open(config['template_root']+temp_name, 'w') as file:
+                file.write(ct)
+            return
+        else:
+            exit('usage: tmpm -c template (algorithm)')
+    temp_name += '.md'
     if os.path.exists(config['template_root'] + temp_name):
         if input('Template %s is already exist, would you cover it?[y/n]:' % temp_name) == 'n':
             exit(0)
     content = match_algorithm()
-    write_algorithm(temp_name, algorithm_name, content)
+    write_algorithm(temp_name, algorithm_name, content, 'w')
 
 
 def append():
@@ -65,7 +74,7 @@ def append():
         exit('usage: tmpm -a template algorithm')
     if os.path.exists(config['template_root'] + temp_name):
         content = match_algorithm()
-        write_algorithm(temp_name, algorithm_name, content)
+        write_algorithm(temp_name, algorithm_name, content, 'a')
     else:
         sys.argv[indx] = '-c'
         create()
@@ -95,30 +104,64 @@ def join():
 
 def h():
     print('usage:\n'
-          '\t * [tmpm]: init "compile_filename" to template/main\n'
           '\t * [tmpm -h]: for help\n'
-          '\t * [tmpm -a template algorithm]: add algorithm to template\n'
+          '\t * [tmpm -r]: select copy and init\n'
+          '\t * [tmpm -r backup]: init "compile_filename" to template/backup\n'
+          '\t * [tmpm -c backup]: create or cover a backup\n'
           '\t * [tmpm -c template algorithm]: create template and write algorithm\n'
+          '\t * [tmpm -a template algorithm]: add algorithm to template\n'
           '\t * [tmpm template]: insert algorithm in template')
+
+
+def init(file_name='main'):
+    with open(config['template_root'] + file_name, 'r') as file:
+        content = file.read()
+    with open(config['compile_filename'], 'w') as file:
+        file.write(content)
+
+
+def revert():
+    indx = sys.argv.index('-r')
+    try:
+        file_name = sys.argv[indx+1]
+    except IndexError:
+        ls = os.listdir(config['template_root'])
+        rls = []
+        cnt = 1
+        for i in ls:
+            if '.' not in i:
+                print('[%d] %s' % (cnt, i), end='\t' if cnt%8 else '\n')
+                rls.append(i)
+                cnt += 1
+        if cnt%8:
+            print()
+        try:
+            indx = int(input('选择:'))
+            if indx<0 or indx>len(rls):
+                raise IndexError
+        except:
+            exit('ERROR!')
+        file_name = rls[indx-1]
+        return init(file_name)
+    if os.path.exists(config['template_root'] + file_name):
+        init(file_name)
+    else:
+        exit('No such backup')
 
 
 def main():
     if len(sys.argv) == 1:
-        path = config['template_root']
-        path += 'main'
-        with open(path, 'r') as file:
-            content = file.read()
-        with open(config['compile_filename'], 'w') as file:
-            file.write(content)
+        init()
+    elif '-h' in sys.argv:
+        h()
+    elif '-c' in sys.argv:
+        create()
+    elif '-a' in sys.argv:
+        append()
+    elif '-r' in sys.argv:
+        revert()
     else:
-        if '-h' in sys.argv:
-            h()
-        elif '-c' in sys.argv:
-            create()
-        elif '-a' in sys.argv:
-            append()
-        else:
-            join()
+        join()
 
 
 if __name__ == '__main__':

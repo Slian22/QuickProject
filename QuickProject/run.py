@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import sys
 import pyperclip
@@ -19,17 +18,18 @@ try:
         for i in config:
             if i != 'compile_tool':
                 config[i] = config[i][0]
+        if not config['template_root'].endswith(dir_char):
+            config['template_root'] += dir_char
 except IOError:
     exit("No file named: project_configure.csv\n May you need run:\"Qpro -init\" first!")
 argv = []
-input_file = config['input_file']
 
 
 def run(use_txt=False, executable_file=str(config['executable_filename'])):
     cmd = executable_file + ' '
     if argv:
         cmd += ' '.join(argv)
-    cmd += (' < ' + input_file if use_txt else '')
+    cmd += (' < ' + config['input_file'] if use_txt else '')
     os.system(cmd)
 
 
@@ -94,6 +94,7 @@ def main():
             if not os.path.exists(__input_file__):
                 print(red_col('ERROR: No such file:%s' % __input_file__))
                 exit(-1)
+            config['input_file'] = __input_file__
     o_file = config['executable_filename']
     if to_build:
         if flag:
@@ -113,3 +114,7 @@ def main():
         run('-i' in sys.argv or '-if' in sys.argv, o_file)
     if flag:
         os.remove(o_file)
+
+
+if __name__ == '__main__':
+    main()
