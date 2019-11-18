@@ -1,7 +1,7 @@
 # QuickProject
 ## Project description
 
-[![](https://img.shields.io/badge/version-0.5.82-green)]() [![](https://img.shields.io/badge/Author-RhythmLian-blue)]()
+[![](https://img.shields.io/badge/version-0.5.92-green)]() [![](https://img.shields.io/badge/Author-RhythmLian-blue)]()
 
 ### 环境
 
@@ -33,11 +33,13 @@
 | :----- | :----- |
 | `Qpro -init` | 将当前文件夹初始化为Qpro项目 |
 | `Qpro -h` | 查看帮助 |
+| `Qpro -c project` | 创建一个Qpro项目 |
 | `Qpro -update` | 更新Qpro |
 | `Qpro -adjust` | 修改配置表 |
+| `Qpro -ssh` | 进入服务器Qpro项目位置 |
 | `Qpro -scp path` |将项目内文件夹或文件上传到默认服务器|
-|`Qpro -scp-init`|将整个项目上传到默认服务器|
-| `Qpro -c project` | 创建一个Qpro项目 |
+| `Qpro -scp-init` |将整个项目上传到默认服务器|
+| `Qpro -get path` |从服务器上拉取项目内文件|
 | `tmpm *` | 调用[模板脚本](#模板脚本)，刷新项目中的默认源文件 |
 | `run *` | 使用[运行脚本](#运行脚本)运行你的项目 |
 | `detector [-[p/f][p/f]]` | 运行[对拍器](#对拍器)（对拍器只能在`Qpro -init`后的文件夹下运行） |
