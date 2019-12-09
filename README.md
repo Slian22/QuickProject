@@ -1,26 +1,26 @@
 # QuickProject
 ## Project description
 
-[![](https://img.shields.io/badge/version-0.5.92-green)]() [![](https://img.shields.io/badge/Author-RhythmLian-blue)]()
+[![](https://img.shields.io/badge/version-0.6.3.3-green)]() [![](https://img.shields.io/badge/Author-RhythmLian-blue)]()
 
 ### 环境
 
-- Qpro基于`gcc/g++/clang/...`与`python3`,
-- 请确保电脑在拥有Python环境的同时, 至少安装了一套C/CPP编译指令.
+- Qpro基于`python3`,
+- 请确保电脑在拥有Python环境的同时, 至少安装一套`其他要使用的语言`环境.
 
 ### 功能
 
-- 提供脚本在命令行里高效***运行C/CPP项目***。
-- 提供***模板管理器***，轻松将代码保存和导出。
-- 提供***对拍器***，轻松进行程序输出结果的对拍或进行文本文件的对比。
+- 提供脚本在命令行里高效**运行项目**。
+- 提供**模板管理器**，轻松将代码保存和导出。
+- 提供**对拍器**，轻松进行程序输出结果的对拍或进行文本文件的对比。
 
 ### 特殊说明
 
 - **Qpro对CLion的特殊支持: 在CLion项目中，Qpro可以自动将其初始化为Qpro项目**
 
-- **任意一个包含C/CPP文件的文件夹都可以成为Qpro项目, Qpro不会对原IDE项目产生影响**
+- **Qpro现内置`c`,`cpp`, `java`, `python2@3`的支持。你可以使用`Qpro -c`创建相应项目**
 
-- **一个文件夹可以同时是Qpro项目和其他IDE项目**
+- **Qpro远程映射支持ipv6**
 
 
 ## 安装:
@@ -40,11 +40,14 @@
 | `Qpro -scp path` |将项目内文件夹或文件上传到默认服务器|
 | `Qpro -scp-init` |将整个项目上传到默认服务器|
 | `Qpro -get path` |从服务器上拉取项目内文件|
+| `Qpro -del path` |从Qpro项目中删除文件(夹)|
+| `Qpro -del-all` |删除整个项目|
 | `tmpm *` | 调用[模板脚本](#模板脚本)，刷新项目中的默认源文件 |
-| `run *` | 使用[运行脚本](#运行脚本)运行你的项目 |
+| `run *` | 使用[运行脚本](#运行脚本)运行你的项目，Windows(`qrun`) |
 | `detector [-[p/f][p/f]]` | 运行[对拍器](#对拍器)（对拍器只能在`Qpro -init`后的文件夹下运行） |
 
-初始化后的项目，可以手动编辑配置表`project_configure.csv`来调整配置。
+- 初始化后的项目，可以手动编辑配置表`project_configure.csv`来调整配置。
+- 支持`C/CPP`但不止于`C/CPP`，理论上你可以使用Qpro运行任何语言项目。
 
 ### 配置表
 
@@ -63,6 +66,8 @@
   ![GUI](https://github.com/Rhythmicc/QuickProject/blob/master/img/3.png?raw=true)
 ### 运行脚本:
 
+  - Windows系统使用`qrun`命令。 
+  
   - 编译或运行
   
       | 参数 | 含义 |
