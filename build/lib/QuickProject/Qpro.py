@@ -1,8 +1,10 @@
 import os
 import re
 import sys
+import colorama
+from colorama import Fore, Style
 
-
+COLORAMA_INIT_FLAG = True
 if sys.platform.startswith('win'):
     is_win = True
     dir_char = '\\'
@@ -40,6 +42,27 @@ int main(int argc, char **argv) {
 }
 
 
+def basic_string_replace(ss):
+    global COLORAMA_INIT_FLAG
+    if COLORAMA_INIT_FLAG:
+        colorama.init()
+        COLORAMA_INIT_FLAG = False
+    ss = ss.split('\n')
+    ret = ''
+    for i in ss:
+        if '[' in i:
+            replace_list = re.findall('\[(.*?)\]', i)
+            split_list = re.split('\[.*?\]', i)
+            for p in range(len(split_list)):
+                ret += Fore.CYAN + split_list[p] + Style.RESET_ALL
+                if p < len(replace_list):
+                    ret += Fore.RED + '[' + Fore.YELLOW + replace_list[p] + Fore.RED + ']' + Style.RESET_ALL
+        else:
+            ret += i
+        ret += '\n'
+    return ret
+
+
 def remove(path):
     import shutil
     if os.path.exists(path):
@@ -66,10 +89,12 @@ def get_config():
 
 def scp_init(server_target, ct=False):
     if server_target:
+        server, target = get_server_target(server_target)
+        user, ip = server.split('@')
         if ct:
-            st = os.system('scp -r %s %s' % (work_project, server_target))
+            st = os.system('scp -r %s %s' % (work_project, user + '@\\[' + ip + '\\]:' + target))
         else:
-            st = os.system('scp -r * %s' % server_target)
+            st = os.system('scp -r * %s' % user + '@\\[' + ip + '\\]:' + target)
         if st:
             exit("upload project failed!")
 
@@ -106,8 +131,11 @@ def create():
                 id_lang = 0
         lang = lang_tool_exe[langs[id_lang - 1]]
         server_target = input('input [user@ip:dir_path] if you need scp:')
-        if server_target and not server_target.endswith('/') and not server_target.endswith(':'):
-            server_target += '/'
+        if server_target and not server_target.endswith('/'):
+            if not server_target.endswith(':'):
+                server_target += '/'
+            else:
+                server_target += '~/'
         if not lang[-1]:
             source_file = ''
             execute = ''
@@ -159,9 +187,9 @@ def scp():
         server, target = get_server_target()
         user, ip = server.split('@')
         if os.path.isdir(path):
-            os.system('scp -r %s %s' % (path, user+'@\\['+ip+'\\]:' + target + path))
+            os.system('scp -r %s %s' % (path, user + '@\\[' + ip + '\\]:' + target + path))
         else:
-            os.system('scp %s %s' % (path, user+'@\\['+ip+'\\]:' + target + path))
+            os.system('scp %s %s' % (path, user + '@\\[' + ip + '\\]:' + target + path))
 
 
 def get():
@@ -174,7 +202,7 @@ def get():
             exit("%s is not in this Qpro project!" % path)
         server, target = get_server_target()
         user, ip = server.split('@')
-        os.system('scp -r %s %s' % (user+'@\\['+ip+'\\]:' + target + path, path))
+        os.system('scp -r %s %s' % (user + '@\\[' + ip + '\\]:' + target + path, path))
 
 
 def adjust():
@@ -237,6 +265,8 @@ def adjust():
 
 
 def pro_init():
+    id_lang = -1
+    langs = []
     if not os.path.exists('CMakeLists.txt'):
         ask = input('Not an CLion Project!' + 'You need make configure manually [y/n]:').strip()
         if 'y' not in ask and 'Y' not in ask:
@@ -250,9 +280,9 @@ def pro_init():
             'java': ['javac', '-d dist', 'java -classpath dist ', '.java'],
             'python3': ['', '', 'python3 ', '.py'],
             'python': ['', '', 'python ', '.py'],
+            'empty': ['', '', '', '']
         }
         langs = list(lang_tool_exe.keys())
-        langs.append('other')
         for i, lang in enumerate(langs):
             print('[%d] %-5s' % (i + 1, lang), end='\t' if (i + 1) % 3 else '\n')
         if len(langs) % 3:
@@ -263,29 +293,33 @@ def pro_init():
                 id_lang = int(input('choose one:'))
             except:
                 id_lang = 0
-        if langs[id_lang - 1] == 'other':
-            lang = ['other_compile_tool', 'other_execute_command ', '.other']
-        else:
-            lang = lang_tool_exe[langs[id_lang - 1]]
-        source_file = ('main' + lang[-1]) if lang[0] != 'javac' else work_project + lang[-1]
-        while not os.path.exists(source_file):
-            source_file = input('Not found "%s", set compile_filename:' % source_file).strip()
+        lang = lang_tool_exe[langs[id_lang - 1]]
+        source_file = ''
+        if langs[id_lang - 1] != 'empty':
+            source_file = ('main' + lang[-1]) if lang[0] != 'javac' else work_project + lang[-1]
+            while not os.path.exists(source_file):
+                source_file = input('Not found "%s", set compile_filename:' % source_file).strip()
         server_target = input('input [user@ip:dir_path] if you need scp:').strip().replace('\\', '/')
-        if ':' in server_target and not server_target.endswith('/') and not server_target.endswith(':'):
-            server_target += '/'
+        if ':' in server_target and not server_target.endswith('/'):
+            if not server_target.endswith(':'):
+                server_target += '/'
+            else:
+                server_target += '~/'
         if lang[0] != 'javac':
             execute = lang[2] + 'dist' + dir_char + work_project if lang[0] else lang[2] + source_file
-        else:
+        elif langs[id_lang - 1] != 'empty':
             work_project = source_file.split(dir_char)[-1].split('.')[0]
             execute = lang[2] + work_project
-        if not os.path.exists('dist') or not os.path.isdir('dist'):
+        else:
+            execute = ''
+        if (not os.path.exists('dist') or not os.path.isdir('dist')) and langs[id_lang - 1] != 'empty':
             os.mkdir('dist')
         info = [
             ['compile_tool', lang[0], lang[1]],
             ['compile_filename', source_file],
             ['executable_filename', execute],
-            ['input_file', 'dist' + dir_char + 'input.txt'],
-            ['template_root', 'template' + dir_char],
+            ['input_file', 'dist' + dir_char + 'input.txt' if langs[id_lang - 1] != 'empty' else ''],
+            ['template_root', 'template' + dir_char if langs[id_lang - 1] != 'empty' else ''],
             ['server_target', server_target]
         ]
     else:
@@ -320,6 +354,9 @@ def pro_init():
     with open('project_configure.csv', 'w') as f:
         for row in info:
             f.write(','.join(row) + '\n')
+    if id_lang >= 0 and langs[id_lang - 1] == 'empty':
+        scp_init(server_target)
+        exit(0)
     with open(info[3][-1], 'w') as f:
         f.write('edit this file to make input')
     if not os.path.exists('template') or not os.path.isdir('template'):
@@ -334,8 +371,11 @@ def pro_init():
     scp_init(server_target)
 
 
-def get_server_target():
-    ls = get_config()['server_target'].split(':')
+def get_server_target(st=None):
+    if not st:
+        ls = get_config()['server_target'].split(':')
+    else:
+        ls = st.split(':')
     if len(ls) > 2:
         server = ':'.join(ls[:8])
         target = ':'.join(ls[8:])
@@ -361,7 +401,7 @@ def delete_all():
 
 def delete():
     try:
-        path = sys.argv[sys.argv.index('-del')+1]
+        path = sys.argv[sys.argv.index('-del') + 1]
     except IndexError:
         exit('usage: Qpro -del path')
     else:
@@ -382,7 +422,7 @@ def delete():
 
 def tele_ls():
     try:
-        path = sys.argv[sys.argv.index('-ls')+1]
+        path = sys.argv[sys.argv.index('-ls') + 1]
     except IndexError:
         path = ''
     config = get_config()
@@ -408,22 +448,22 @@ func = {
 
 def main():
     if len(sys.argv) < 2 or '-h' == sys.argv[1]:
-        print('usage:\n'
-              '\t * [Qpro -init    ]: let dir be a Qpro project!\n'
-              '\t * [Qpro -h       ]: help\n'
-              '\t * [Qpro -c name  ]: create a Qpro project\n'
-              '\t * [Qpro -update  ]: update Qpro\n'
-              '\t * [Qpro -adjust  ]: adjust configure\n'
-              '\t * [Qpro -ssh     ]: login server by ssh\n'
-              '\t * [Qpro -scp path]: upload path to default server target\n'
-              '\t * [Qpro -scp-init]: upload all of project to server target\n'
-              '\t * [Qpro -get path]: download file from server target\n'
-              '\t * [Qpro -del path]: delete path in project\n'
-              '\t * [Qpro -del-all ]: delete Qpro project\n'
-              '\t * [Qpro -ls path ]: list element in path\n'
-              '\t * [tmpm *        ]: manage your template\n'
-              '\t * [run *         ]: run your Qpro project\n'
-              '\t * [detector -[p/f][p/f] ]: run beat detector for two source files')
+        print(basic_string_replace('usage:\n'
+                                   '   * [Qpro -init    ]: let dir be a Qpro project!\n'
+                                   '   * [Qpro -h       ]: help\n'
+                                   '   * [Qpro -c name  ]: create a Qpro project\n'
+                                   '   * [Qpro -update  ]: update Qpro\n'
+                                   '   * [Qpro -adjust  ]: adjust configure\n'
+                                   '   * [Qpro -ssh     ]: login server by ssh\n'
+                                   '   * [Qpro -scp path]: upload path to default server target\n'
+                                   '   * [Qpro -scp-init]: upload all of project to server target\n'
+                                   '   * [Qpro -get path]: download file from server target\n'
+                                   '   * [Qpro -del path]: delete path in project\n'
+                                   '   * [Qpro -del-all ]: delete Qpro project\n'
+                                   '   * [Qpro -ls path ]: list element in path\n'
+                                   '   * [tmpm *        ]: manage your template\n'
+                                   '   * [qrun *        ]: run your Qpro project\n'
+                                   '   * [detector -(p/f)(p/f)]: run beat detector for two source files'))
     elif '-update' == sys.argv[1]:
         os.system('pip3 install Qpro --upgrade')
         exit(0)

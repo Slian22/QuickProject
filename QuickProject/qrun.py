@@ -1,7 +1,13 @@
 import os
 import sys
 import pyperclip
+import colorama
+import QuickProject
+from colorama import Fore, Style
+from QuickProject.Qpro import basic_string_replace
 
+colorama.init()
+QuickProject.Qpro.COLORAMA_INIT_FLAG = False
 if sys.platform.startswith('win'):
     is_win = True
     dir_char = '\\'
@@ -23,6 +29,8 @@ try:
 except IOError:
     exit("No file named: project_configure.csv\n May you need run:\"Qpro -init\" first!")
 argv = []
+retain_arg = ['-br', '-b', '-r', '-h', '-i']
+has_recog = {i: False for i in retain_arg}
 
 
 def run(use_txt=False, executable_file=str(config['executable_filename'])):
@@ -35,15 +43,7 @@ def run(use_txt=False, executable_file=str(config['executable_filename'])):
 
 
 def red_col(string):
-    if is_win:
-        return string
-    return '\033[1;31m' + string + '\033[0m'
-
-
-def blue_col(string):
-    if is_win:
-        return string
-    return '\033[1;34m' + string + '\033[0m'
+    return Fore.RED + string + Style.RESET_ALL
 
 
 def main():
@@ -54,19 +54,19 @@ def main():
     if '-debug' in sys.argv:
         raise ImportError
     if '-h' in sys.argv:
-        print(blue_col('usage: run.py:\n') +
-              '  * ' + blue_col('build or run:\n') +
-              '    # ' + red_col('[ -b ]') + ' : ' + blue_col('build\n') +
-              '    # ' + red_col('[ -r ]') + ' : ' + blue_col('run\n') +
-              '    # ' + red_col('[ -br]') + ' : ' + blue_col('build and run\n') +
-              blue_col('    (it will run if neither of commands in "build or run")\n') +
-              '  * ' + red_col('[ -i ]') + ' : ' + blue_col('use input.txt as input\n') +
-              '  * ' + red_col('[ -if  *.* ]') + ' : ' + blue_col('set input file(*.*) as input\n') +
-              '  * ' + red_col('[-if -paste]') + ' : ' + blue_col('use Clipboard content as input\n') +
-              '  * ' + red_col('[ -f  *.cpp]') + ' : ' + blue_col('set build file as *.cpp\n') +
-              '  * ' + red_col('[ -h ]') + ' : ' + blue_col('help\n') +
-              '  * ' + red_col('[ *  ]') + ' : ' + blue_col('add parameters for program\n') +
-              '  * ' + blue_col('Modify config to adjust default configuration'))
+        print(basic_string_replace('(qrun.py) usage:\n'
+                                   '  * build or run:\n'
+                                   '    # [ -b ]: build\n'
+                                   '    # [ -r ]: run\n'
+                                   '    # [ -br]: build and run\n'
+                                   '    (it will run if neither of commands in "build or run")\n'
+                                   '  * [ -i ]: use input.txt as input\n'
+                                   '  * [ -if  *.*  ]: set input file(*.*) as input\n'
+                                   '  * [ -if -paste]: use Clipboard content as input\n'
+                                   '  * [ -f  *.cpp ]: set build file as *.cpp\n'
+                                   '  * [ -h ]: help\n'
+                                   '  * [ *  ]: add parameters for program\n'
+                                   '  * Modify config to adjust default configuration'))
         exit(0)
     if '-f' in sys.argv:
         index = sys.argv.index('-f')
@@ -96,7 +96,7 @@ def main():
     if config['compile_tool'][0] and to_build:
         clang = ['clang', 'gcc', 'g++']
         use_lang = config['compile_tool'][0].split()[0]
-        if use_lang in clang:
+        if use_lang in clang or 'gcc' in use_lang:
             if flag:
                 o_file = filename.split(dir_char)[-1].split('.')[0]
                 o_file = os.path.abspath(o_file)
@@ -113,10 +113,15 @@ def main():
             if not add_flag:
                 add_flag = True
                 continue
-            if not i.startswith('-'):
-                argv.append(i)
+            if i in retain_arg:
+                if has_recog[i]:
+                    argv.append(i)
+                else:
+                    has_recog[i] = True
             elif i == '-if' or i == '-f':
                 add_flag = False
+            else:
+                argv.append(i)
         run('-i' in sys.argv or '-if' in sys.argv, o_file)
     if config['compile_tool'][0] and flag:
         if config['compile_tool'][0].split()[0] == 'javac':

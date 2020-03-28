@@ -1,11 +1,8 @@
 from setuptools import setup, find_packages
-import sys
 
-is_win = sys.platform.startswith('win')
-
-with open("README.md", "r", encoding='utf-8') as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
-VERSION = '0.6.3.3'
+VERSION = '0.6.4.9'
 
 setup(
     name='Qpro',
@@ -26,11 +23,11 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=True,
-    install_requires=['pyperclip'],
+    install_requires=['pyperclip', 'colorama'],
     entry_points={
         'console_scripts': [
             'Qpro = QuickProject.Qpro:main',
-            'qrun = QuickProject.run:main' if is_win else 'run = QuickProject.run:main',
+            'qrun = QuickProject.qrun:main',
             'tmpm = QuickProject.tmpm:main',
             'detector = QuickProject.detector:main'
         ]
